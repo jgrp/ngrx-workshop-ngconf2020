@@ -29,6 +29,12 @@
       "name": "Star Wars",
       "earnings": "2255",
       "description": null
+    },
+    {
+      "id": "7bf0045b-5b69-416b-b570-0fd2408cb8a3",
+      "name": "New Book",
+      "earnings": "2000",
+      "description": null
     }
   ]
 }

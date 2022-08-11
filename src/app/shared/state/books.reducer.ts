@@ -1,27 +1,26 @@
 import { createReducer, on, Action, createSelector } from "@ngrx/store";
+import {EntityState, createEntityAdapter, EntityAdapter} from "@ngrx/entity";
 import { BookModel, calculateBooksGrossEarnings } from "src/app/shared/models";
 import { BooksPageActions, BooksApiActions } from "src/app/books/actions";
 import {BookDetailComponent} from "../../books/components/book-detail/book-detail.component";
 
-
-const createBook = (books: BookModel[], book: BookModel) => [...books, book];
-const updateBook = (books: BookModel[], changes: BookModel) =>
-    books.map(book => {
-        return book.id === changes.id ? Object.assign({}, book, changes) : book;
-    });
-const deleteBook = (books: BookModel[], bookId: string) =>
-    books.filter(book => bookId !== book.id);
-
-
-export interface State {
-    collection: BookModel[];
+export interface State extends EntityState<BookModel> {
     activeBookId: string | null;
 }
 
-export const initialState: State = {
-    collection: [],
+// by default, id of model (BookModel) will be used as identifier for the collection
+const adapter: EntityAdapter<BookModel> = createEntityAdapter<BookModel>();
+/* customize for using different id
+* const adapter = createEntityAdapter<BookModel>({
+*   selectId: (model: BookModel) => model.name,
+*       // for special sorting
+*   sortComparer: (a: BookModel, b: BookModel) => a.name.localCompare(b.name)
+* });
+* */
+
+export const initialState: State = adapter.getInitialState({
     activeBookId: null
-}
+})
 
 export const booksReducer = createReducer(
     initialState,
@@ -42,28 +41,39 @@ export const booksReducer = createReducer(
         };
     }),
     on(BooksApiActions.booksLoaded, (state, action) => {
-        return {
-            ...state,
-            collection: action.books
-        }
+        return adapter.setAll(action.books, state);
+        // return {
+        //     ...state,
+        //     collection: action.books
+        // }
     }),
     on(BooksApiActions.bookCreated, (state, action) => {
-        return {
+        return adapter.addOne(action.book, {
             ...state,
-            collection: createBook(state.collection, action.book)
-        }
+            activeBookId: null
+        });
+        // return {
+        //     ...state,
+        //     collection: createBook(state.collection, action.book)
+        // }
     }),
     on(BooksApiActions.bookUpdated, (state, action) => {
-        return {
-            ...state,
-            collection: updateBook(state.collection, action.book)
-        }
+        return adapter.updateOne({id: action.book.id, changes: action.book },
+            {
+                ...state,
+                activeBookId: null
+            });
+        // return {
+        //     ...state,
+        //     collection: updateBook(state.collection, action.book)
+        // }
     }),
     on(BooksApiActions.bookDeleted, (state, action) => {
-        return {
-            ...state,
-            collection: deleteBook(state.collection, action.bookId)
-        }
+        return adapter.removeOne(action.bookId, state);
+        // return {
+        //     ...state,
+        //     collection: deleteBook(state.collection, action.bookId)
+        // }
     })
     // on(BooksPageActions.book)
 )
@@ -76,7 +86,8 @@ export function reducer(state: undefined | State, action: Action) {
 * "Getter" Selectors
 * just getting value out of state, not modifying or sth else
 * */
-export const selectAll = (state: State) => state.collection;
+
+export const { selectAll, selectEntities } = adapter.getSelectors();
 export const selectActiveBookId = (state: State) => state.activeBookId;
 
 /**
@@ -93,14 +104,20 @@ export const selectActiveBook_unoptimized = (state: State) => {
     // Computation
     return books.find(book => book.id === activeBookId);
 }
-// is the same, like above fkt
+// is the same as above fkt
 // merge multiple inputs to a result
-export const selectActiveBook = createSelector(
+export const selectActiveBook_old = createSelector(
     selectAll, // first param
     selectActiveBookId, // second param
     (books, activeBookId) => {
         return books.find(book => book.id === activeBookId)
     }
+)
+// with adapter collection
+export const selectActiveBook = createSelector(
+    selectEntities, // first param
+    selectActiveBookId, // second param
+    (entities, activeBookId) => activeBookId ? entities[activeBookId] : null
 )
 
 export const selectEarningsTotals_unoptimized = createSelector(

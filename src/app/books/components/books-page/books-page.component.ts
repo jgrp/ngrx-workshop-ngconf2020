@@ -19,17 +19,17 @@ export class BooksPageComponent implements OnInit {
   books: BookModel[] = [];
   total$: Observable<number>;
   books$: Observable<BookModel[] | null>;
-  currentBook$: Observable<BookModel>;
+  currentBook$: Observable<BookModel | null | undefined>;
 
   constructor(
     private booksService: BooksService,
     private store: Store
   ) {
-    // @ts-ignore
+    //@ts-ignore
     this.total$ = store.select(selectBooksEarningTotal);
-    // @ts-ignore
+    //@ts-ignore
     this.books$ = store.select(selectAllBooks);
-    // @ts-ignore
+    //@ts-ignore
     this.currentBook$ = store.select(selectActiveBook);
   }
 
