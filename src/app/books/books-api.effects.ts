@@ -10,6 +10,7 @@ import {of} from "rxjs";
 
 @Injectable()
 export class BooksApiEffects{
+    // actions& is an observable with all the actions that are dispatched in the application
     constructor(private actions$: Actions, private bookService: BooksService) {}
 
     getAllBooks$ = createEffect(() => {
